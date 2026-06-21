@@ -1,0 +1,13 @@
+from contextlib import asynccontextmanager
+from .utilities import engine
+from sqlmodel import SQLModel
+from fastapi import FastAPI
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    async with engine.begin() as conn:
+        await conn.run_sync(SQLModel.metadata.create_all)
+    
+    yield
+    
+    await engine.dispose()
