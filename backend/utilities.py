@@ -17,5 +17,6 @@ engine = create_async_engine(DATABASE_URL, connect_args=connect_args)
 async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
 async def get_session():
+    """Async Generator For Sessions, Use To Access DataBAse On Each Route"""
     async with async_session() as session:
         yield session
