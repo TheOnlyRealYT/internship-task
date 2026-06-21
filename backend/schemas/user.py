@@ -6,7 +6,7 @@ from uuid import UUID
 class GetUserResponseModel(BaseModel):
     """Model for getting user from a dedicated get request"""
     username: str
-    org: str
+    org: str | UUID | None = None
     role: UserRole = Field(default=UserRole.viewer)
     created_at: datetime
 
@@ -17,9 +17,10 @@ class BulkReaderResponseModel(BaseModel):
 
 class CreateUserModel(BaseModel):
     """Model for user creation to separate database model from user interactable model"""
-    password: str
+    password: str = Field(exclude=True)
     username: str
     role: UserRole = Field(default=UserRole.viewer)
+    org_id: UUID | None = None
 
 class UserChangeUsernameModel(BaseModel):
     """Model for username change operations"""

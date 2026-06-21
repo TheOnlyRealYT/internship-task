@@ -22,7 +22,12 @@ async def get_session():
 
 #common errors
 credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
+    status_code=status.HTTP_401_UNAUTHORIZED,
+    detail="Could not validate credentials",
+    headers={"WWW-Authenticate": "Bearer"},
+)
+
+user_already_exists_error = HTTPException(
+    status_code=status.HTTP_409_CONFLICT,
+    detail="User Already Exists"
 )
