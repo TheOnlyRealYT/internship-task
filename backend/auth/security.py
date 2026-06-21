@@ -10,6 +10,7 @@ from jwt.exceptions import InvalidTokenError
 from ..models.user import User
 from ..services.dependencies import get_session
 from sqlalchemy.ext.asyncio import AsyncSession
+from ..services.dependencies import credentials_exception
 
 class Token(BaseModel):
     access_token: str
@@ -22,13 +23,8 @@ dotenv.load_dotenv()
 SECRET_KEY = os.getenv("SECRET_KEY", "")
 ALGORITHM = os.getenv("ALGORITHM", "")
 ACCESS_TOKEN_EXPIRE_MINUTES = float(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 0.0))
-credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-)
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/v1/auth/token")
 
 password_context = PasswordHasher()
 

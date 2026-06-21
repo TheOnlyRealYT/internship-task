@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 from os import getenv
 from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlalchemy.ext.asyncio import async_sessionmaker
+from fastapi import HTTPException, status
 
 
 load_dotenv()
@@ -18,3 +19,10 @@ async def get_session():
     """Async Generator For Sessions, Use To Access DataBAse On Each Route"""
     async with async_session() as session:
         yield session
+
+#common errors
+credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+)

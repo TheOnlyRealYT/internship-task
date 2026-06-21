@@ -2,7 +2,7 @@ from sqlmodel import SQLModel, Field
 from enum import Enum
 from uuid import UUID, uuid4
 from datetime import datetime
-from sqlalchemy.orm import declared_attr
+
 
 class UserRole(str, Enum):
     admin = "admin"      # full access, manage users
