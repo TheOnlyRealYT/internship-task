@@ -3,3 +3,5 @@ from .routes import apirouter
 from .context_manager import lifespan
 
 app = FastAPI(debug=True, lifespan=lifespan)
+
+app.include_router(apirouter)
