@@ -1,5 +1,5 @@
 from contextlib import asynccontextmanager
-from .utilities import engine
+from ..services.dependencies import engine
 from sqlmodel import SQLModel
 from fastapi import FastAPI
 
