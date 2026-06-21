@@ -1,0 +1,26 @@
+services:
+  app:
+    build: .
+    image: darkatlas-app
+    container_name: darkatlas-app
+    ports:
+      - "80:80"
+    env_file:
+      - .env
+    depends_on:
+      - db
+
+  db:
+    image: postgres:16
+    container_name: darkatlas-db
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=darkatlas
+      - POSTGRES_PASSWORD=1234darkatlas
+      - POSTGRES_DB=darkatlas
+    volumes:
+      - darkatlas_data:/var/lib/postgresql/data
+
+volumes:
+  darkatlas_data:
