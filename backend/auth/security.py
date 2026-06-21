@@ -2,7 +2,7 @@ from argon2 import PasswordHasher
 from fastapi.security import OAuth2PasswordBearer
 from typing import Annotated
 from uuid import UUID
-from fastapi import HTTPException, status, Depends
+from fastapi import Depends
 from pydantic import BaseModel
 from datetime import datetime, timedelta, timezone
 import jwt, dotenv, os
