@@ -11,8 +11,7 @@ DATABASE_URL = getenv("DATABASE_URL")
 if DATABASE_URL is None:
     raise Exception("No Database URL Found")
 
-connect_args = {"check_same_thread": False} #making sure fastapi can multithread
-engine = create_async_engine(DATABASE_URL, connect_args=connect_args)
+engine = create_async_engine(DATABASE_URL)
 
 async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
