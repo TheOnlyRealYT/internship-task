@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from ..auth.security import require_role, get_current_user, hash_password
 from ..models.user import User, UserRole
-from ..schemas.user import GetUserResponseModel, CreateUserModel, CreateUserModelRestricted
+from ..schemas.user import GetUserResponseModel, CreateUserModel, CreateUserModelRestricted, UserChangeUsernameModel
 from ..services.dependencies import get_session, AsyncSession, user_already_exists_error
-from sqlmodel import select
+from sqlmodel import select, update
 
 userrouter = APIRouter()
 
@@ -32,3 +32,18 @@ async def register_user(user: CreateUserModelRestricted, session: AsyncSession =
     session.add(dbuser)
     await session.commit()
     return dbuser
+
+@userrouter.patch('/change-username', response_model=GetUserResponseModel)
+async def change_username(user: UserChangeUsernameModel, current_user: User = Depends(get_current_user), session: AsyncSession = Depends(get_session)):
+    conflict_flag = await session.exec(select(User).where(User.username == user.new_username))
+    if not conflict_flag.first() is None:
+        raise HTTPException(status.HTTP_409_CONFLICT, "Username already exists")
+    result = await session.exec(select(User).where(User.username == current_user.username))
+    result = result.first()
+    if result is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "User Not Found")
+    result.username = user.new_username
+    session.add(result)
+    await session.commit()
+    await session.refresh(result)
+    return result
