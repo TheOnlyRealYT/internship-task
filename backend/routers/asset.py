@@ -16,3 +16,9 @@ async def get_asset(asset_id: UUID, current_user: User = Depends(get_current_use
     if asset.org_id == current_user.org_id or current_user.is_elevated_user:
         return asset
     raise HTTPException(status.HTTP_403_FORBIDDEN, "Can't Access Another Organization's Assets")
+
+@assetrouter.get("/")
+async def get_assets(
+
+):
+    pass

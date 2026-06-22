@@ -27,10 +27,3 @@ class User(SQLModel, table=True):
     @property
     def is_elevated_user(self) -> bool:
         return self.role in {UserRole.admin, UserRole.analyst}
-    
-    @field_validator("username", mode="before")
-    @classmethod
-    def normalize_username(cls, value: str) -> str:
-        if isinstance(value, str):
-            return value.strip().lower()
-        return value

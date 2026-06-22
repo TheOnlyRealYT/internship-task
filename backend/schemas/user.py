@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from datetime import datetime
 from ..models.user import UserRole
 from uuid import UUID
@@ -21,16 +21,37 @@ class CreateUserModel(BaseModel):
     username: str
     role: UserRole = Field(default=UserRole.viewer)
     org_id: UUID | None = None
+        
+    @field_validator("username", mode="before")
+    @classmethod
+    def normalize_username(cls, value: str) -> str:
+        if isinstance(value, str):
+            return value.strip().lower()
+        return value
 
 class CreateUserModelRestricted(BaseModel):
     """Model for user creation to separate database model from user interactable model makes sure user can choose their role and hardcoded to viewer"""
     password: str = Field(exclude=True)
     username: str
     org_id: UUID | None = None
-
+    
+    @field_validator("username", mode="before")
+    @classmethod
+    def normalize_username(cls, value: str) -> str:
+        if isinstance(value, str):
+            return value.strip().lower()
+        return value
+    
 class UserChangeUsernameModel(BaseModel):
     """Model for username change operations"""
     new_username: str
+        
+    @field_validator("username", mode="before")
+    @classmethod
+    def normalize_username(cls, value: str) -> str:
+        if isinstance(value, str):
+            return value.strip().lower()
+        return value
 
 class AdminUserUpdateModel(BaseModel):
     """Model for admin updating users"""
@@ -38,6 +59,13 @@ class AdminUserUpdateModel(BaseModel):
     password: str | None = None
     role: UserRole | None = None
     org_id: UUID | None = None
+        
+    @field_validator("username", mode="before")
+    @classmethod
+    def normalize_username(cls, value: str) -> str:
+        if isinstance(value, str):
+            return value.strip().lower()
+        return value
 
 class AdminOrganizationUpdateModel(BaseModel):
     """Model for an admin to update a view or analyists organization"""
