@@ -1,4 +1,4 @@
-from sqlmodel import SQLModel, Field, Column, Relationship
+from sqlmodel import SQLModel, Field, Column, ARRAY, String
 from sqlalchemy.dialects.postgresql import JSONB
 from uuid import UUID, uuid4
 from datetime import datetime
@@ -25,19 +25,6 @@ class AssetSource(str, Enum):
     scan = "scan"
     manual = "manual"
 
-class AssetTagLink(SQLModel, table=True):
-    __tablename__ = "asset_tag_link" #type: ignore
-
-    # Using actual UUIDs for clean, indexed relational performance
-    asset_id: UUID = Field(foreign_key="assets.id", primary_key=True, ondelete="CASCADE")
-    tag_id: UUID = Field(foreign_key="asset_tags.id", primary_key=True, ondelete="CASCADE")
-
-class AssetTag(SQLModel, table=True):
-    __tablename__ = "asset_tags" #type: ignore
-    id: UUID = Field(default_factory=uuid4, primary_key=True)
-    name: str= Field(unique=True, index=True)
-    assets: list["Asset"] = Relationship(back_populates="tags", link_model=AssetTagLink)
-
 class Asset(SQLModel, table=True):
     __tablename__ = "assets" # type: ignore
     
@@ -50,4 +37,4 @@ class Asset(SQLModel, table=True):
     source: AssetSource = AssetSource.manual
     asset_metadata: dict = Field(default={}, sa_column=Column(JSONB))
     org_id: UUID | None = Field(default=None, foreign_key="orgs.id") # links asset with an organization
-    tags: list[AssetTag] = Relationship(back_populates="assets", link_model=AssetTagLink)
+    tags: list[str] = Field(default=[], sa_column=Column(ARRAY(String)))
