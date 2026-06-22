@@ -44,7 +44,7 @@ class CreateUserModelRestricted(BaseModel):
     
 class UserChangeUsernameModel(BaseModel):
     """Model for username change operations"""
-    new_username: str
+    username: str
         
     @field_validator("username", mode="before")
     @classmethod
