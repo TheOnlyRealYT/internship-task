@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordRequestForm
 from ..services.dependencies import get_session, credentials_exception
 from ..auth.security import Authenticate_user, create_access_token, Token
 from sqlmodel.ext.asyncio.session import AsyncSession
@@ -8,7 +9,8 @@ from ..models.user import User
 authrouter = APIRouter()
 
 @authrouter.post('/token')
-async def login(username: str, password: str, session: AsyncSession = Depends(get_session)):
+async def login(form_data: OAuth2PasswordRequestForm = Depends(), session: AsyncSession = Depends(get_session)):
+    username, password = form_data.username, form_data.password
     statement = select(User).where(User.username == username)
     result = await session.exec(statement)
     user = result.first()
