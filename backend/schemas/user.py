@@ -22,6 +22,12 @@ class CreateUserModel(BaseModel):
     role: UserRole = Field(default=UserRole.viewer)
     org_id: UUID | None = None
 
+class CreateUserModelRestricted(BaseModel):
+    """Model for user creation to separate database model from user interactable model makes sure user can choose their role and hardcoded to viewer"""
+    password: str = Field(exclude=True)
+    username: str
+    org_id: UUID | None = None
+
 class UserChangeUsernameModel(BaseModel):
     """Model for username change operations"""
     new_username: str
