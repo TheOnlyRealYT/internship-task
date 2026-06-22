@@ -1,11 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from ..auth.security import require_role, get_current_user
-from ..services.dependencies import get_session
+from ..services.dependencies import get_session, cant_access_other_org_error
 from ..services.utilities import get_404_error
 from ..services.lifecycle import touch_asset
 from sqlmodel.ext.asyncio.session import AsyncSession
-from sqlmodel import select, func, any_, update, col
+from sqlmodel import select, func, any_, update, col, or_
 from ..models.user import User, UserRole
+from ..models.asset_relationship import AssetRelationship
 from ..models.asset import Asset, AssetType, AssetStatus, AssetSource
 from uuid import UUID
 from ..schemas.asset import CreateAssetModel, UpdateAssetModel
@@ -63,7 +64,7 @@ async def get_asset(asset_id: UUID, current_user: User = Depends(get_current_use
     if asset.org_id == current_user.org_id or current_user.is_elevated_user:
         await session.commit()
         return asset
-    raise HTTPException(status.HTTP_403_FORBIDDEN, "Can't Access Another Organization's Assets")
+    raise cant_access_other_org_error
 
 @assetrouter.get("/")
 async def get_assets(
@@ -83,7 +84,7 @@ async def get_assets(
             statement = statement.where(Asset.org_id == org_id)
     else:
         if org_id and org_id != current_user.org_id:
-            raise HTTPException(status.HTTP_403_FORBIDDEN, "Can't Access Another Organization's Assets")
+            raise cant_access_other_org_error
         statement = statement.where(Asset.org_id == current_user.org_id)
 
     if type:
@@ -176,4 +177,42 @@ async def bulk_lifecycle_update(session: AsyncSession = Depends(get_session)):
         "message": "Asset lifecycle sweeping complete.",
         "marked_stale": stale_result.rowcount,
         "marked_archived": archive_result.rowcount,
+    }
+
+@assetrouter.get("/{asset_id}/graph")
+async def get_asset_graph(asset_id: UUID, current_user: User = Depends(get_current_user),  session: AsyncSession = Depends(get_session)):
+    asset = await session.get(Asset, asset_id)
+        
+    if asset is None:
+        raise get_404_error("Asset")
+    
+    if not current_user.is_elevated_user:
+        if asset.org_id != current_user.org_id:
+            raise cant_access_other_org_error
+
+    statement = select(AssetRelationship).where(
+        or_(
+            AssetRelationship.from_asset_id == asset_id,
+            AssetRelationship.to_asset_id == asset_id,
+        )
+    )
+    result = await session.exec(statement)
+    relationships = result.all()
+
+    related_ids = set()
+    for rel in relationships:
+        related_ids.add(rel.from_asset_id)
+        related_ids.add(rel.to_asset_id)
+    related_ids.discard(asset_id) 
+
+    related_assets = []
+    if related_ids:
+        related_statement = select(Asset).where(col(Asset.id).in_(related_ids))
+        related_result = await session.exec(related_statement)
+        related_assets = related_result.all()
+
+    return {
+        "asset": asset,
+        "relationships": relationships,
+        "related_assets": related_assets,
     }

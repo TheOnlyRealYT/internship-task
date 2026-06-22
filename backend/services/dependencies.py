@@ -24,3 +24,8 @@ user_already_exists_error = HTTPException(
     status_code=status.HTTP_409_CONFLICT,
     detail="User Already Exists"
 )
+
+cant_access_other_org_error = HTTPException(
+    status_code=status.HTTP_403_FORBIDDEN,
+    detail="Can't Access Another Organization's Assets"
+)
