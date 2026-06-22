@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from ..models.asset import AssetStatus, AssetType
+from backend.models.asset import AssetStatus, AssetType
 from uuid import UUID
 
 class CreateAssetModel(BaseModel):

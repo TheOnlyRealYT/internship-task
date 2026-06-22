@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field, field_validator
 from datetime import datetime
-from ..models.user import UserRole
+from backend.models.user import UserRole
 from uuid import UUID
 
 class GetUserResponseModel(BaseModel):

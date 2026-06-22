@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends
-from ..services.dedup import upsert_asset, process_relationships
-from ..services.dependencies import get_session
-from ..auth.security import require_role
-from ..models.user import UserRole
-from ..models.asset import Asset, AssetSource
+from backend.services.dedup import upsert_asset, process_relationships
+from backend.services.dependencies import get_session
+from backend.auth.security import require_role
+from backend.models.user import UserRole
+from backend.models.asset import Asset, AssetSource
 from uuid import UUID
 from sqlmodel.ext.asyncio.session import AsyncSession
 

@@ -1,7 +1,7 @@
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
-from ..models.asset import Asset, AssetStatus, AssetType
-from ..models.asset_relationship import AssetRelationship, RelationshipType
+from backend.models.asset import Asset, AssetStatus, AssetType
+from backend.models.asset_relationship import AssetRelationship, RelationshipType
 from .lifecycle import touch_asset
 from datetime import datetime, timezone
 from uuid import UUID

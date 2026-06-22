@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from ..models.asset import Asset, AssetStatus
+from backend.models.asset import Asset, AssetStatus
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 def touch_asset(asset: Asset, session: AsyncSession) -> None:

@@ -6,6 +6,6 @@ COPY requirements.txt /darkatlas/requirements.txt
 
 RUN pip install --no-cache-dir --upgrade -r /darkatlas/requirements.txt
 
-COPY ./backend /darkatlas/app
+COPY ./backend /darkatlas/backend
 
-CMD ["fastapi", "run", "app/app.py", "--port", "80"]
+CMD ["fastapi", "run", "backend/app.py", "--port", "80"]

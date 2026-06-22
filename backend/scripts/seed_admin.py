@@ -1,7 +1,7 @@
 import asyncio
-from ..services.dependencies import async_session
-from ..models.user import User, UserRole
-from ..auth.security import hash_password
+from backend.services.dependencies import async_session
+from backend.models.user import User, UserRole
+from backend.auth.security import hash_password
 
 async def seed_admin():
     async with async_session() as session:

@@ -1,4 +1,4 @@
-from ..settings.config import DATABASE_URL
+from backend.settings.config import DATABASE_URL
 from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from fastapi import HTTPException, status

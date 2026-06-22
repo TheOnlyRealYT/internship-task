@@ -1,15 +1,15 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
-from ..auth.security import require_role, get_current_user
-from ..services.dependencies import get_session, cant_access_other_org_error
-from ..services.utilities import get_404_error
-from ..services.lifecycle import touch_asset
+from backend.auth.security import require_role, get_current_user
+from backend.services.dependencies import get_session, cant_access_other_org_error
+from backend.services.utilities import get_404_error
+from backend.services.lifecycle import touch_asset
 from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlmodel import select, func, any_, update, col, or_
-from ..models.user import User, UserRole
-from ..models.asset_relationship import AssetRelationship
-from ..models.asset import Asset, AssetType, AssetStatus, AssetSource
+from backend.models.user import User, UserRole
+from backend.models.asset_relationship import AssetRelationship
+from backend.models.asset import Asset, AssetType, AssetStatus, AssetSource
 from uuid import UUID
-from ..schemas.asset import CreateAssetModel, UpdateAssetModel
+from backend.schemas.asset import CreateAssetModel, UpdateAssetModel
 from datetime import datetime, timezone, timedelta
 
 assetrouter = APIRouter()

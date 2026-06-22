@@ -7,10 +7,10 @@ from pydantic import BaseModel
 from datetime import datetime, timedelta, timezone
 import jwt, dotenv, os
 from jwt.exceptions import InvalidTokenError
-from ..models.user import User, UserRole
-from ..services.dependencies import get_session
+from backend.models.user import User, UserRole
+from backend.services.dependencies import get_session
 from sqlalchemy.ext.asyncio import AsyncSession
-from ..services.dependencies import credentials_exception
+from backend.services.dependencies import credentials_exception
 
 class Token(BaseModel):
     access_token: str

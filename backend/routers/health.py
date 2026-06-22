@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from ..services.dependencies import get_session, AsyncSession
+from backend.services.dependencies import get_session, AsyncSession
 from sqlmodel import select
 
 

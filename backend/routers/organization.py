@@ -1,12 +1,12 @@
 from fastapi import APIRouter, Depends, Query
 from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlmodel import select, func
-from ..services.dependencies import get_session
-from ..services.utilities import get_404_error
-from ..models.organization import Organization
-from ..schemas.organization import CreateOrganizationModel
-from ..models.user import UserRole
-from ..auth.security import require_role
+from backend.services.dependencies import get_session
+from backend.services.utilities import get_404_error
+from backend.models.organization import Organization
+from backend.schemas.organization import CreateOrganizationModel
+from backend.models.user import UserRole
+from backend.auth.security import require_role
 from uuid import UUID
 
 orgrouter = APIRouter()

@@ -2,13 +2,13 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel.ext.asyncio.session import AsyncSession
 from uuid import UUID
 
-from ..services.dependencies import get_session
-from ..services.utilities import get_404_error
-from ..models.asset_relationship import AssetRelationship, RelationshipType
-from ..models.asset import Asset
-from ..schemas.asset_relationship import CreateRelationshipModel
-from ..auth.security import require_role, get_current_user
-from ..models.user import User, UserRole
+from backend.services.dependencies import get_session
+from backend.services.utilities import get_404_error
+from backend.models.asset_relationship import AssetRelationship, RelationshipType
+from backend.models.asset import Asset
+from backend.schemas.asset_relationship import CreateRelationshipModel
+from backend.auth.security import require_role, get_current_user
+from backend.models.user import User, UserRole
 
 
 relationshiprouter = APIRouter()

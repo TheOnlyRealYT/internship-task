@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field
 from uuid import UUID
 
-from ..models.asset_relationship import RelationshipType
+from backend.models.asset_relationship import RelationshipType
 
 class CreateRelationshipModel(BaseModel):
     from_asset_id: UUID

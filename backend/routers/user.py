@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status, responses, Query
-from ..auth.security import require_role, get_current_user, hash_password, UUID
-from ..models.user import User, UserRole
-from ..schemas.user import GetUserResponseModel, CreateUserModel, CreateUserModelRestricted, UserChangeUsernameModel, AdminOrganizationUpdateModel, AdminUserUpdateModel
-from ..services.dependencies import get_session, AsyncSession, user_already_exists_error
-from ..services.utilities import get_user_by_id_or_username, get_404_error
+from backend.auth.security import require_role, get_current_user, hash_password, UUID
+from backend.models.user import User, UserRole
+from backend.schemas.user import GetUserResponseModel, CreateUserModel, CreateUserModelRestricted, UserChangeUsernameModel, AdminOrganizationUpdateModel, AdminUserUpdateModel
+from backend.services.dependencies import get_session, AsyncSession, user_already_exists_error
+from backend.services.utilities import get_user_by_id_or_username, get_404_error
 from sqlmodel import select, func
 
 userrouter = APIRouter()

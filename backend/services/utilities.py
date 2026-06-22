@@ -1,6 +1,6 @@
 from sqlmodel.ext.asyncio.session import AsyncSession
 from uuid import UUID
-from ..models.user import User
+from backend.models.user import User
 from sqlmodel import select
 from fastapi import HTTPException, status
 
