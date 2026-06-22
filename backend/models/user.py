@@ -22,7 +22,7 @@ class User(SQLModel, table=True):
     created_at: datetime = Field(
         sa_column=Column(DateTime(timezone=True), nullable=False), 
         default_factory=lambda: datetime.now(timezone.utc)
-        )
+    )
 
     @property
     def is_elevated_user(self) -> bool:
