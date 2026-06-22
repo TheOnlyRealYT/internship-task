@@ -62,10 +62,8 @@ async def upsert_asset(
     if existing:
         merged = merge_asset(existing, record, session)
         session.add(merged)
-        await session.commit()
         return merged, False
 
     new_asset = create_asset_from_record(record, org_id)
     session.add(new_asset)
-    await session.commit()
     return new_asset, True
