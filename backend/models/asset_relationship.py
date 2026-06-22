@@ -2,7 +2,6 @@ from sqlmodel import SQLModel, UniqueConstraint, Field, DateTime, Column
 from enum import Enum
 from uuid import UUID, uuid4
 from datetime import datetime, timezone
-from typing import ClassVar
 
 class RelationshipType(str, Enum):
     parent_of = "parent_of"        # domain -> subdomain
@@ -12,7 +11,7 @@ class RelationshipType(str, Enum):
     detected_on = "detected_on"    # technology -> subdomain/service
 
 class AssetRelationship(SQLModel, table=True):
-    __tablename__: ClassVar[str] = "asset_relationships" #type: ignore
+    __tablename__: str = "asset_relationships" #type: ignore
     __table_args__ = (
         UniqueConstraint("from_asset_id", "to_asset_id", "relationship_type", name="uq_relationship"),
     )
