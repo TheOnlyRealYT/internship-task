@@ -8,19 +8,23 @@ services:
     env_file:
       - .env
     depends_on:
-      - db
+      db:
+        condition: service_healthy
 
   db:
     image: postgres:16
     container_name: darkatlas-db
     ports:
       - "5432:5432"
-    environment:
-      - POSTGRES_USER=darkatlas
-      - POSTGRES_PASSWORD=1234darkatlas
-      - POSTGRES_DB=darkatlas
+    env_file:
+      - db.env
     volumes:
       - darkatlas_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U darkatlas"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
 volumes:
   darkatlas_data:
