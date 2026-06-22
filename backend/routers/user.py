@@ -1,10 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, status, responses
+from fastapi import APIRouter, Depends, HTTPException, status, responses, Query
 from ..auth.security import require_role, get_current_user, hash_password, UUID
 from ..models.user import User, UserRole
 from ..schemas.user import GetUserResponseModel, CreateUserModel, CreateUserModelRestricted, UserChangeUsernameModel, AdminOrganizationUpdateModel, AdminUserUpdateModel
 from ..services.dependencies import get_session, AsyncSession, user_already_exists_error
 from ..services.utilities import get_user_by_id_or_username
-from sqlmodel import select, update
+from sqlmodel import select, func
 
 userrouter = APIRouter()
 
@@ -86,3 +86,23 @@ async def update_user_admin(new_user: AdminUserUpdateModel, username: str | None
     session.add(user)
     await session.commit()
     return user
+
+@userrouter.get('/user-bulk-reader', dependencies=[Depends(require_role(UserRole.admin))])
+async def read_many_users(
+    limit: int = Query(10, ge=0, le=100),
+    skip: int = Query(0, ge=0),
+    session: AsyncSession = Depends(get_session)
+    ):
+    """pagenation using limit and offset, returned as well for clear reading"""
+    count_statement = select(func.count()).select_from(User)
+    total = (await session.exec(count_statement)).one()
+
+    statement = select(User).offset(skip).limit(limit)
+    users = (await session.exec(statement)).all()
+
+    return {
+        "total": total,
+        "skip": skip,
+        "limit": limit,
+        "items": users,
+    }
