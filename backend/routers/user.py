@@ -1,5 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from ..auth.security import require_role, get_current_user, hash_password
+from fastapi import APIRouter, Depends, HTTPException, status, responses
+from ..auth.security import require_role, get_current_user, hash_password, UUID
 from ..models.user import User, UserRole
 from ..schemas.user import GetUserResponseModel, CreateUserModel, CreateUserModelRestricted, UserChangeUsernameModel
 from ..services.dependencies import get_session, AsyncSession, user_already_exists_error
@@ -12,8 +12,8 @@ async def get_current_user_profile(current_user: User = Depends(get_current_user
     """Gets current user who is authenticated with an access token"""
     return current_user
 
-@userrouter.post('/create-user', response_model=GetUserResponseModel)
-async def create_new_user(user: CreateUserModel, current_user: User = Depends(require_role(UserRole.admin)), session: AsyncSession = Depends(get_session)):
+@userrouter.post('/create-user', response_model=GetUserResponseModel, dependencies=[Depends(require_role(UserRole.admin))])
+async def create_new_user(user: CreateUserModel, session: AsyncSession = Depends(get_session)):
     """Creates a new user at the admin levels, can specify the user access level"""
     result = await session.exec(select(User).where(User.username == user.username))
     if result.first():
@@ -47,3 +47,31 @@ async def change_username(user: UserChangeUsernameModel, current_user: User = De
     await session.commit()
     await session.refresh(result)
     return result
+
+@userrouter.delete('/delete-me')
+async def delete_current_user(current_user: User = Depends(get_current_user), session: AsyncSession = Depends(get_session)):
+    try:
+        await session.delete(current_user)
+        await session.commit()
+        return responses.Response({"details": "Deleted Successfully"}, status.HTTP_200_OK)
+    except Exception as e:
+        raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, f"ERROR: {e}")
+    
+
+@userrouter.delete('/delete-user', dependencies=[Depends(require_role(UserRole.admin))])
+async def admin_delete_current_user(username: str | None = None, user_id: UUID | None = None, session: AsyncSession = Depends(get_session)):
+    if user_id:
+        user = await session.get(User, user_id)
+        if not user : raise HTTPException(status.HTTP_404_NOT_FOUND, "User Not Found")
+        await session.delete(user)
+        await session.commit()
+        return user
+    elif username:
+        user = await session.exec(select(User).where(User.username == username))
+        user = user.first()
+        if not user : raise HTTPException(status.HTTP_404_NOT_FOUND, "User Not Found")
+        await session.delete(user)
+        await session.commit()
+        return user
+    else:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Include a query of either username or id")
