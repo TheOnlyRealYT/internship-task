@@ -35,7 +35,7 @@ class Asset(SQLModel, table=True):
     )
     last_seen: datetime = Field(
         sa_column=Column(DateTime(timezone=True), nullable=False),
-        default_factory=lambda: datetime.now(timezone.utc),
+        default_factory=lambda: datetime.now(timezone.utc)
     )
     status: AssetStatus = AssetStatus.active
     source: AssetSource = AssetSource.manual

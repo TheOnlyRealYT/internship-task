@@ -1,7 +1,8 @@
-from sqlmodel import SQLModel, Field
+from sqlmodel import SQLModel, Field, DateTime, Column
+from pydantic import field_validator
 from enum import Enum
 from uuid import UUID, uuid4
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 class UserRole(str, Enum):
@@ -18,4 +19,18 @@ class User(SQLModel, table=True):
     hashed_password: str = Field(exclude=True)
     role: UserRole = Field(default=UserRole.viewer)
     org_id: UUID | None = Field(default=None, foreign_key="orgs.id") # links user with an organization
-    created_at: datetime = Field(default_factory=datetime.utcnow) # deprecated but used for factory
+    created_at: datetime = Field(
+        sa_column=Column(DateTime(timezone=True), nullable=False), 
+        default_factory=lambda: datetime.now(timezone.utc)
+        )
+
+    @property
+    def is_elevated_user(self) -> bool:
+        return self.role in {UserRole.admin, UserRole.analyst}
+    
+    @field_validator("username", mode="before")
+    @classmethod
+    def normalize_username(cls, value: str) -> str:
+        if isinstance(value, str):
+            return value.strip().lower()
+        return value
