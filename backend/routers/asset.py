@@ -11,6 +11,48 @@ from ..schemas.asset import CreateAssetModel, UpdateAssetModel
 
 assetrouter = APIRouter()
 
+@assetrouter.get("/summary")
+async def get_asset_summary(
+    org_id: UUID | None = Query(None),
+    session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    aggregation data for dashboards
+    """
+    type_statement = select(Asset.asset_type, func.count()).group_by(Asset.asset_type)
+    status_statement = select(Asset.status, func.count()).group_by(Asset.status)
+
+    if current_user.is_elevated_user:
+        if org_id:
+            type_statement = type_statement.where(Asset.org_id == org_id)
+            status_statement = status_statement.where(Asset.org_id == org_id)
+    else:
+        if org_id != current_user.org_id:
+            raise HTTPException(status.HTTP_403_FORBIDDEN, "Can't Access Summary Of Another Organization")
+        type_statement = type_statement.where(Asset.org_id == current_user.org_id)
+        status_statement = status_statement.where(Asset.org_id == current_user.org_id)
+
+    type_results = (await session.exec(type_statement)).all()
+    status_results = (await session.exec(status_statement)).all()
+
+    by_type = {
+        (t if hasattr(t, "value") else t): count 
+        for t, count in type_results
+    }
+    by_status = {
+        (s if hasattr(s, "value") else s): count 
+        for s, count in status_results
+    }
+
+    total_count = sum(by_type.values())
+
+    return {
+        "total_count": total_count,
+        "by_type": by_type,
+        "by_status": by_status,
+    }
+
 @assetrouter.get("/{asset_id}")
 async def get_asset(asset_id: UUID, current_user: User = Depends(get_current_user), session: AsyncSession = Depends(get_session)):
     asset = await session.get(Asset, asset_id)
