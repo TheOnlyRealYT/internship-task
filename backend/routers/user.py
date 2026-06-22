@@ -83,6 +83,7 @@ async def update_user_admin(new_user: AdminUserUpdateModel, username: str | None
     new_user_fields = new_user.model_dump(exclude_unset=True)
     for attribute, value in new_user_fields.items():
         if attribute == "password":
+            attribute = "hashed_password"
             value = hash_password(value)
         setattr(user, attribute, value)
     session.add(user)
