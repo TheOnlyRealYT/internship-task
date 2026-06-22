@@ -3,10 +3,11 @@ from ..auth.security import require_role, get_current_user
 from ..services.dependencies import get_session
 from ..services.utilities import get_404_error
 from sqlmodel.ext.asyncio.session import AsyncSession
-from sqlmodel import select, func
+from sqlmodel import select, func, any_
 from ..models.user import User, UserRole
 from ..models.asset import Asset, AssetType, AssetStatus, AssetSource
 from uuid import UUID
+from ..schemas.asset import CreateAssetModel, UpdateAssetModel
 
 assetrouter = APIRouter()
 
@@ -35,6 +36,8 @@ async def get_assets(
         if org_id:
             statement = statement.where(Asset.org_id == org_id)
     else:
+        if org_id and org_id != current_user.org_id:
+            raise HTTPException(status.HTTP_403_FORBIDDEN, "Can't Access Another Organization's Assets")
         statement = statement.where(Asset.org_id == current_user.org_id)
 
     if type:
@@ -42,7 +45,7 @@ async def get_assets(
     if status_:
         statement = statement.where(Asset.status == status_)
     if tag:
-        statement = statement.where(Asset.tags.__contains__([tag]))
+        statement = statement.where(tag == any_(Asset.tags))
 
     sort_column = getattr(Asset, sort_by, None)
     if sort_column is None:
@@ -62,3 +65,37 @@ async def get_assets(
         "limit": limit,
         "items": assets,
     }
+
+@assetrouter.post("/", dependencies=[Depends(require_role(UserRole.admin, UserRole.analyst))])
+async def create_asset(new_asset: CreateAssetModel, session: AsyncSession = Depends(get_session)):
+    asset = Asset(**new_asset.model_dump())
+    session.add(asset)
+    await session.commit()
+    return asset
+
+@assetrouter.delete("/{asset_id}", dependencies=[Depends(require_role(UserRole.admin, UserRole.analyst))])
+async def delete_asset(asset_id: UUID, session: AsyncSession = Depends(get_session)):
+    asset = await session.get(Asset, asset_id)
+    await session.delete(asset)
+    await session.commit()
+    return asset
+
+@assetrouter.put("/{asset_id}", dependencies=[Depends(require_role(UserRole.admin, UserRole.analyst))])
+async def update_asset(asset_id: UUID, new_asset: UpdateAssetModel, session: AsyncSession = Depends(get_session)):
+    asset = await session.get(Asset, asset_id)
+    if asset is None : raise get_404_error("Asset")
+    for attribute, value in new_asset.model_dump(exclude_unset=True).items():
+        setattr(asset, attribute, value)
+    session.add(asset)
+    await session.commit()
+    return asset
+
+@assetrouter.patch("/{asset_id}", dependencies=[Depends(require_role(UserRole.admin, UserRole.analyst))])
+async def add_tags(asset_id: UUID, new_tags: list[str], session: AsyncSession = Depends(get_session)):
+    asset = await session.get(Asset, asset_id)
+    if asset is None : raise get_404_error("Asset")
+    asset.tags += new_tags
+    session.add(asset)
+    await session.commit()
+    return asset
+

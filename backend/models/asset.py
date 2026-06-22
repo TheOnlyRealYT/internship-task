@@ -1,5 +1,5 @@
-from sqlmodel import SQLModel, Field, Column, ARRAY, String, DateTime
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlmodel import SQLModel, Field, Column, String, DateTime
+from sqlalchemy.dialects.postgresql import JSONB, ARRAY
 from uuid import UUID, uuid4
 from datetime import datetime, timezone
 from enum import Enum
@@ -41,4 +41,4 @@ class Asset(SQLModel, table=True):
     source: AssetSource = AssetSource.manual
     asset_metadata: dict = Field(default={}, sa_column=Column(JSONB))
     org_id: UUID | None = Field(default=None, foreign_key="orgs.id") # links asset with an organization
-    tags: list[str] = Field(default=[], sa_column=Column(ARRAY(String)))
+    tags: list[str] = Field(default=[], sa_column=Column(ARRAY(String), index=True))    
