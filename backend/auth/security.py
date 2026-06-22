@@ -2,12 +2,12 @@ from argon2 import PasswordHasher
 from fastapi.security import OAuth2PasswordBearer
 from typing import Annotated
 from uuid import UUID
-from fastapi import Depends
+from fastapi import Depends, HTTPException, status
 from pydantic import BaseModel
 from datetime import datetime, timedelta, timezone
 import jwt, dotenv, os
 from jwt.exceptions import InvalidTokenError
-from ..models.user import User
+from ..models.user import User, UserRole
 from ..services.dependencies import get_session
 from sqlalchemy.ext.asyncio import AsyncSession
 from ..services.dependencies import credentials_exception
@@ -71,3 +71,13 @@ async def get_current_user(
     if user is None:
         raise credentials_exception
     return user
+
+def require_role(*allowed_roles: UserRole):
+    def role_checker(user: User = Depends(get_current_user)) -> User:
+        if user.role not in allowed_roles:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Requires one of roles: {[r.value for r in allowed_roles]}"
+            )
+        return user
+    return role_checker
