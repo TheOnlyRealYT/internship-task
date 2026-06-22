@@ -1,8 +1,7 @@
-from sqlalchemy.ext.asyncio import create_async_engine
 from dotenv import load_dotenv
 from os import getenv
 from sqlmodel.ext.asyncio.session import AsyncSession
-from sqlalchemy.ext.asyncio import async_sessionmaker
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from fastapi import HTTPException, status
 
 

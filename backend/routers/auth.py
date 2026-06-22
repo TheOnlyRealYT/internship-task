@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from ..services.dependencies import get_session, credentials_exception
 from ..auth.security import Authenticate_user, create_access_token, Token
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlmodel import select
 from ..models.user import User
 
@@ -10,7 +10,7 @@ authrouter = APIRouter()
 @authrouter.post('/token')
 async def login(username: str, password: str, session: AsyncSession = Depends(get_session)):
     statement = select(User).where(User.username == username)
-    result = await session.execute(statement)
+    result = await session.exec(statement)
     user = result.first()
     if user is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "User Not Registered")
