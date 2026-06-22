@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from ..auth.security import require_role, get_current_user
 from ..services.dependencies import get_session
 from ..services.utilities import get_404_error
+from ..services.lifecycle import touch_asset
 from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlmodel import select, func, any_
 from ..models.user import User, UserRole
@@ -57,6 +58,7 @@ async def get_asset_summary(
 async def get_asset(asset_id: UUID, current_user: User = Depends(get_current_user), session: AsyncSession = Depends(get_session)):
     asset = await session.get(Asset, asset_id)
     if asset is None : raise get_404_error("Asset")
+    touch_asset(asset)
     if asset.org_id == current_user.org_id or current_user.is_elevated_user:
         return asset
     raise HTTPException(status.HTTP_403_FORBIDDEN, "Can't Access Another Organization's Assets")
@@ -100,6 +102,8 @@ async def get_assets(
     statement = statement.offset(skip).limit(limit)
     result = await session.exec(statement)
     assets = result.all()
+    for asset in assets:
+        touch_asset(asset)
 
     return {
         "total": total,
@@ -126,6 +130,7 @@ async def delete_asset(asset_id: UUID, session: AsyncSession = Depends(get_sessi
 async def update_asset(asset_id: UUID, new_asset: UpdateAssetModel, session: AsyncSession = Depends(get_session)):
     asset = await session.get(Asset, asset_id)
     if asset is None : raise get_404_error("Asset")
+    touch_asset(asset)
     for attribute, value in new_asset.model_dump(exclude_unset=True).items():
         setattr(asset, attribute, value)
     session.add(asset)
@@ -136,6 +141,7 @@ async def update_asset(asset_id: UUID, new_asset: UpdateAssetModel, session: Asy
 async def add_tags(asset_id: UUID, new_tags: list[str], session: AsyncSession = Depends(get_session)):
     asset = await session.get(Asset, asset_id)
     if asset is None : raise get_404_error("Asset")
+    touch_asset(asset)
     asset.tags += new_tags
     session.add(asset)
     await session.commit()
