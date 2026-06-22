@@ -1,14 +1,8 @@
-from dotenv import load_dotenv
-from os import getenv
+from ..settings.config import DATABASE_URL
 from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from fastapi import HTTPException, status
 
-
-load_dotenv()
-DATABASE_URL = getenv("DATABASE_URL")
-if DATABASE_URL is None:
-    raise Exception("No Database URL Found")
 
 engine = create_async_engine(DATABASE_URL)
 
