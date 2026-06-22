@@ -4,11 +4,12 @@ from ..services.dependencies import get_session
 from ..services.utilities import get_404_error
 from ..services.lifecycle import touch_asset
 from sqlmodel.ext.asyncio.session import AsyncSession
-from sqlmodel import select, func, any_
+from sqlmodel import select, func, any_, update, col
 from ..models.user import User, UserRole
 from ..models.asset import Asset, AssetType, AssetStatus, AssetSource
 from uuid import UUID
 from ..schemas.asset import CreateAssetModel, UpdateAssetModel
+from datetime import datetime, timezone, timedelta
 
 assetrouter = APIRouter()
 
@@ -58,8 +59,9 @@ async def get_asset_summary(
 async def get_asset(asset_id: UUID, current_user: User = Depends(get_current_user), session: AsyncSession = Depends(get_session)):
     asset = await session.get(Asset, asset_id)
     if asset is None : raise get_404_error("Asset")
-    touch_asset(asset)
+    touch_asset(asset, session)
     if asset.org_id == current_user.org_id or current_user.is_elevated_user:
+        await session.commit()
         return asset
     raise HTTPException(status.HTTP_403_FORBIDDEN, "Can't Access Another Organization's Assets")
 
@@ -103,8 +105,9 @@ async def get_assets(
     result = await session.exec(statement)
     assets = result.all()
     for asset in assets:
-        touch_asset(asset)
+        touch_asset(asset, session)
 
+    await session.commit()
     return {
         "total": total,
         "skip": skip,
@@ -130,7 +133,7 @@ async def delete_asset(asset_id: UUID, session: AsyncSession = Depends(get_sessi
 async def update_asset(asset_id: UUID, new_asset: UpdateAssetModel, session: AsyncSession = Depends(get_session)):
     asset = await session.get(Asset, asset_id)
     if asset is None : raise get_404_error("Asset")
-    touch_asset(asset)
+    touch_asset(asset, session)
     for attribute, value in new_asset.model_dump(exclude_unset=True).items():
         setattr(asset, attribute, value)
     session.add(asset)
@@ -141,9 +144,36 @@ async def update_asset(asset_id: UUID, new_asset: UpdateAssetModel, session: Asy
 async def add_tags(asset_id: UUID, new_tags: list[str], session: AsyncSession = Depends(get_session)):
     asset = await session.get(Asset, asset_id)
     if asset is None : raise get_404_error("Asset")
-    touch_asset(asset)
+    touch_asset(asset, session)
     asset.tags += new_tags
     session.add(asset)
     await session.commit()
     return asset
 
+@assetrouter.post('/admin/lifecycle-reap', dependencies=[Depends(require_role(UserRole.admin))])
+async def bulk_lifecycle_update(session: AsyncSession = Depends(get_session)):
+    now = datetime.now(timezone.utc)
+    stale_cutoff = now - timedelta(days=7)
+    archive_cutoff = now - timedelta(days=30)
+
+    stale_result = await session.exec(
+        update(Asset)
+        .where(col(Asset.status) == AssetStatus.active)
+        .where(col(Asset.last_seen) < stale_cutoff)
+        .values(status=AssetStatus.stale)
+        )
+
+    archive_result = await session.exec(
+        update(Asset)
+        .where(col(Asset.status) == AssetStatus.stale)
+        .where(col(Asset.last_seen) < archive_cutoff)
+        .values(status=AssetStatus.archived)
+        )
+
+    await session.commit()
+
+    return {
+        "message": "Asset lifecycle sweeping complete.",
+        "marked_stale": stale_result.rowcount,
+        "marked_archived": archive_result.rowcount,
+    }
