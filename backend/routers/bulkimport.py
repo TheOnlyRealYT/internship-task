@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends
 from ..services.dedup import upsert_asset
 from ..services.dependencies import get_session
 from ..auth.security import require_role

@@ -39,7 +39,7 @@ def merge_asset(existing: Asset, incoming: dict) -> Asset:
 def create_asset_from_record(record: dict, org_id) -> Asset:
     """Build a brand new Asset from a raw incoming record."""
     return Asset(
-        asset_type=record["type"],
+        asset_type=record["asset_type"],
         value=record["value"],
         status=record.get("status", AssetStatus.active),
         source=record.get("source", "import"),
@@ -57,7 +57,7 @@ async def upsert_asset(
     org_id,
 ) -> tuple[Asset, bool]:
     """Find-or-create a single asset record. Returns (asset, was_created)."""
-    existing = await find_existing_asset(session, record["type"], record["value"], org_id)
+    existing = await find_existing_asset(session, record["asset_type"], record["value"], org_id)
 
     if existing:
         merged = merge_asset(existing, record)
