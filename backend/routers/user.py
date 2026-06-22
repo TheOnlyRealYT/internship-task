@@ -61,7 +61,7 @@ async def delete_current_user(current_user: User = Depends(get_current_user), se
 
 @userrouter.delete('/delete-user', dependencies=[Depends(require_role(UserRole.admin))])
 async def admin_delete_current_user(username: str | None = None, user_id: UUID | None = None, session: AsyncSession = Depends(get_session)):
-    user = get_user_by_id_or_username(session, username, user_id)
+    user = await get_user_by_id_or_username(session, username, user_id)
     await session.delete(user)
     await session.commit()
     return user
