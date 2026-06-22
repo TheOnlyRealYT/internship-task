@@ -22,10 +22,10 @@ async def find_existing_asset(
     return result.first()
 
 
-def merge_asset(existing: Asset, incoming: dict) -> Asset:
+def merge_asset(existing: Asset, incoming: dict, session: AsyncSession) -> Asset:
     """Merge an incoming record into an already-existing asset
     Strategy: new metadata keys win on conflict, tags are unioned, last_seen always advances, stale assets reactivate on re-sight."""
-    touch_asset(existing)
+    touch_asset(existing, session)
 
     incoming_tags = incoming.get("tags", [])
     existing.tags = list(set(existing.tags) | set(incoming_tags))
@@ -60,10 +60,12 @@ async def upsert_asset(
     existing = await find_existing_asset(session, record["asset_type"], record["value"], org_id)
 
     if existing:
-        merged = merge_asset(existing, record)
+        merged = merge_asset(existing, record, session)
         session.add(merged)
+        await session.commit()
         return merged, False
 
     new_asset = create_asset_from_record(record, org_id)
     session.add(new_asset)
+    await session.commit()
     return new_asset, True
