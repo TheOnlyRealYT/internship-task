@@ -15,7 +15,7 @@ class User(SQLModel, table=True):
 
     id: UUID = Field(default_factory=uuid4, primary_key=True)
     username: str = Field(unique=True, index=True)
-    hashed_password: str
+    hashed_password: str = Field(exclude=True)
     role: UserRole = Field(default=UserRole.viewer)
     org_id: UUID | None = Field(default=None, foreign_key="orgs.id") # links user with an organization
     created_at: datetime = Field(default_factory=datetime.utcnow) # deprecated but used for factory

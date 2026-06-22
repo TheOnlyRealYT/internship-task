@@ -34,7 +34,11 @@ class UserChangeUsernameModel(BaseModel):
 
 class AdminUserUpdateModel(BaseModel):
     """Model for admin updating users"""
-    new_username: str | None = None
-    new_password: str | None = None
+    username: str | None = None
+    password: str | None = None
     role: UserRole | None = None
     org_id: UUID | None = None
+
+class AdminOrganizationUpdateModel(BaseModel):
+    """Model for an admin to update a view or analyists organization"""
+    new_org_id: UUID

@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status, responses
 from ..auth.security import require_role, get_current_user, hash_password, UUID
 from ..models.user import User, UserRole
-from ..schemas.user import GetUserResponseModel, CreateUserModel, CreateUserModelRestricted, UserChangeUsernameModel
+from ..schemas.user import GetUserResponseModel, CreateUserModel, CreateUserModelRestricted, UserChangeUsernameModel, AdminOrganizationUpdateModel, AdminUserUpdateModel
 from ..services.dependencies import get_session, AsyncSession, user_already_exists_error
+from ..services.utilities import get_user_by_id_or_username
 from sqlmodel import select, update
 
 userrouter = APIRouter()
@@ -60,18 +61,28 @@ async def delete_current_user(current_user: User = Depends(get_current_user), se
 
 @userrouter.delete('/delete-user', dependencies=[Depends(require_role(UserRole.admin))])
 async def admin_delete_current_user(username: str | None = None, user_id: UUID | None = None, session: AsyncSession = Depends(get_session)):
-    if user_id:
-        user = await session.get(User, user_id)
-        if not user : raise HTTPException(status.HTTP_404_NOT_FOUND, "User Not Found")
-        await session.delete(user)
-        await session.commit()
-        return user
-    elif username:
-        user = await session.exec(select(User).where(User.username == username))
-        user = user.first()
-        if not user : raise HTTPException(status.HTTP_404_NOT_FOUND, "User Not Found")
-        await session.delete(user)
-        await session.commit()
-        return user
-    else:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Include a query of either username or id")
+    user = get_user_by_id_or_username(session, username, user_id)
+    await session.delete(user)
+    await session.commit()
+    return user
+
+@userrouter.patch('/update-organization', dependencies=[Depends(require_role(UserRole.admin))])
+async def admin_update_organization(org: AdminOrganizationUpdateModel, username: str | None = None, user_id: UUID | None = None, session: AsyncSession = Depends(get_session)):
+    #org = await session.get(Organization, org.new_org_id)
+    #if org.first() is None : raise HTTPException(status.HTTP_404_NOT_FOUND, "Organization Not Found")
+    #Organization Currently Not Implemeneted
+    user = await get_user_by_id_or_username(session, username, user_id)
+    user.org_id = org.new_org_id
+    session.add(user)
+    await session.commit()
+    return user
+    
+@userrouter.put('/update-user', dependencies=[Depends(require_role(UserRole.admin))])
+async def update_user_admin(new_user: AdminUserUpdateModel, username: str | None = None, user_id: UUID | None = None, session: AsyncSession = Depends(get_session)):
+    user = await get_user_by_id_or_username(session, username, user_id)
+    new_user_fields = new_user.model_dump(exclude_unset=True)
+    for attribute, value in new_user_fields.items():
+        setattr(user, attribute, value)
+    session.add(user)
+    await session.commit()
+    return user
