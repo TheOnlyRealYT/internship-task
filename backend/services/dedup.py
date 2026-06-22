@@ -1,7 +1,7 @@
 # services/dedup.py
-from sqlmodel import select
+from sqlmodel import select, Relationship
 from sqlmodel.ext.asyncio.session import AsyncSession
-from ..models.asset import Asset, AssetStatus, AssetType
+from ..models.asset import Asset, AssetStatus, AssetType, AssetTagLink, AssetTag
 from .lifecycle import touch_asset
 from datetime import datetime, timezone
 
