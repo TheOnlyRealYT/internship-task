@@ -36,14 +36,14 @@ async def register_user(user: CreateUserModelRestricted, session: AsyncSession =
 
 @userrouter.patch('/change-username', response_model=GetUserResponseModel)
 async def change_username(user: UserChangeUsernameModel, current_user: User = Depends(get_current_user), session: AsyncSession = Depends(get_session)):
-    conflict_flag = await session.exec(select(User).where(User.username == user.new_username))
+    conflict_flag = await session.exec(select(User).where(User.username == user.username))
     if not conflict_flag.first() is None:
         raise HTTPException(status.HTTP_409_CONFLICT, "Username already exists")
     result = await session.exec(select(User).where(User.username == current_user.username))
     result = result.first()
     if result is None:
         raise get_404_error("User")
-    result.username = user.new_username
+    result.username = user.username
     session.add(result)
     await session.commit()
     await session.refresh(result)
