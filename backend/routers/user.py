@@ -3,7 +3,7 @@ from ..auth.security import require_role, get_current_user, hash_password, UUID
 from ..models.user import User, UserRole
 from ..schemas.user import GetUserResponseModel, CreateUserModel, CreateUserModelRestricted, UserChangeUsernameModel, AdminOrganizationUpdateModel, AdminUserUpdateModel
 from ..services.dependencies import get_session, AsyncSession, user_already_exists_error
-from ..services.utilities import get_user_by_id_or_username
+from ..services.utilities import get_user_by_id_or_username, get_404_error
 from sqlmodel import select, func
 
 userrouter = APIRouter()
@@ -42,7 +42,7 @@ async def change_username(user: UserChangeUsernameModel, current_user: User = De
     result = await session.exec(select(User).where(User.username == current_user.username))
     result = result.first()
     if result is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "User Not Found")
+        raise get_404_error("User")
     result.username = user.new_username
     session.add(result)
     await session.commit()

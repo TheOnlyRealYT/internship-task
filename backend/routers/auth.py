@@ -5,6 +5,7 @@ from ..auth.security import Authenticate_user, create_access_token, Token
 from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlmodel import select
 from ..models.user import User
+from ..services.utilities import get_404_error
 
 authrouter = APIRouter()
 

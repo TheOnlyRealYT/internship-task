@@ -5,6 +5,8 @@ from sqlmodel import select
 from fastapi import HTTPException, status
 
 
+def get_404_error(missing: str) -> HTTPException:
+    return HTTPException(status.HTTP_404_NOT_FOUND, f"{missing} Not Found")
 
 async def get_user_by_id_or_username(
     session: AsyncSession,
@@ -21,6 +23,6 @@ async def get_user_by_id_or_username(
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Include a query of either username or id")
 
     if not user:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "User Not Found")
+        raise get_404_error("User")
 
     return user
