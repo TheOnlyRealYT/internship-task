@@ -185,6 +185,7 @@ async def get_asset_graph(asset_id: UUID, current_user: User = Depends(get_curre
         
     if asset is None:
         raise get_404_error("Asset")
+    touch_asset(asset, session)
     
     if not current_user.is_elevated_user:
         if asset.org_id != current_user.org_id:
@@ -210,7 +211,10 @@ async def get_asset_graph(asset_id: UUID, current_user: User = Depends(get_curre
         related_statement = select(Asset).where(col(Asset.id).in_(related_ids))
         related_result = await session.exec(related_statement)
         related_assets = related_result.all()
+    for asset in related_assets:
+        touch_asset(asset, session)
 
+    await session.commit()
     return {
         "asset": asset,
         "relationships": relationships,

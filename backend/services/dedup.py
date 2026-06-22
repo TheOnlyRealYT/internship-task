@@ -79,6 +79,7 @@ async def upsert_asset(
 
     if existing:
         merged = merge_asset(existing, record, session)
+        touch_asset(merged, session)
         session.add(merged)
         return merged, False
 
@@ -142,7 +143,7 @@ async def process_relationships(
                     f"Relationship target not found: {target['asset_type']}:{target['value']}"
                 )
                 continue
-
+            touch_asset(target_asset, session)
             await create_relationship_if_missing(
                 session,
                 from_asset_id=current_asset_id,
