@@ -46,7 +46,6 @@ async def change_username(user: UserChangeUsernameModel, current_user: User = De
     result.username = user.username
     session.add(result)
     await session.commit()
-    await session.refresh(result)
     return result
 
 @userrouter.delete('/delete-me')
