@@ -5,8 +5,8 @@ from uuid import UUID
 class CreateAssetModel(BaseModel):
     asset_type: AssetType
     value: str
+    org_id: UUID # links asset with an organization
     asset_metadata: dict = {}
-    org_id: UUID | None = None # links asset with an organization
     tags: list[str] = [] 
 
 class UpdateAssetModel(BaseModel):

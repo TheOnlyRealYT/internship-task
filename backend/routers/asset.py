@@ -1,13 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from backend.auth.security import require_role, get_current_user
 from backend.services.dependencies import get_session, cant_access_other_org_error
+from backend.services.dedup import find_existing_asset
 from backend.services.utilities import get_404_error
 from backend.services.lifecycle import touch_asset
-from sqlmodel.ext.asyncio.session import AsyncSession
-from sqlmodel import select, func, any_, update, col, or_
 from backend.models.user import User, UserRole
 from backend.models.asset_relationship import AssetRelationship
 from backend.models.asset import Asset, AssetType, AssetStatus, AssetSource
+from sqlmodel.ext.asyncio.session import AsyncSession
+from sqlmodel import select, func, any_, update, col, or_
 from uuid import UUID
 from backend.schemas.asset import CreateAssetModel, UpdateAssetModel
 from datetime import datetime, timezone, timedelta
@@ -164,6 +165,11 @@ async def get_assets(
 
 @assetrouter.post("/", dependencies=[Depends(require_role(UserRole.admin, UserRole.analyst))])
 async def create_asset(new_asset: CreateAssetModel, session: AsyncSession = Depends(get_session)):
+    asset = await find_existing_asset(session, new_asset.asset_type, new_asset.value, new_asset.org_id)
+    if asset: 
+        touch_asset(asset, session)
+        await session.commit()
+        raise HTTPException(status.HTTP_409_CONFLICT, f"Asset Already Exists, {asset.id}")
     asset = Asset(**new_asset.model_dump())
     session.add(asset)
     await session.commit()
