@@ -7,8 +7,9 @@ A backend Asset Management System built for the DarkAtlas ASM platform — track
 ## Setup
 
 1. Clone the GitHub repo
-2. Run `docker compose up` in the root directory
-3. Seed an admin user:
+2. remove ".example" suffex from .env files
+3. Run `docker compose up` in the root directory
+4. Seed an admin user:
    ```bash
    docker exec <container_name> python -m backend.scripts.seed_admin
    ```
