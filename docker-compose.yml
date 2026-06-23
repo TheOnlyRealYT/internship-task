@@ -38,7 +38,7 @@ services:
     environment:
       - POSTGRES_DB=darkatlas_test
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U darkatlas"]
+      test: ["CMD-SHELL", "pg_isready -U darkatlas_test"]
       interval: 5s
       timeout: 5s
       retries: 5
