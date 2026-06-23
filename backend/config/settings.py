@@ -1,7 +1,7 @@
-from dotenv import load_dotenv
+from dotenv import load_dotenv, find_dotenv
 from os import getenv
 
-load_dotenv()
+load_dotenv(find_dotenv(".env"))
 DATABASE_URL = getenv("DATABASE_URL", "")
 if DATABASE_URL is None:
     raise Exception("No Database URL Found")
