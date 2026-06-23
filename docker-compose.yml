@@ -17,7 +17,7 @@ services:
     ports:
       - "5432:5432"
     env_file:
-      - db.env
+      - .env.db
     volumes:
       - darkatlas_data:/var/lib/postgresql/data
     healthcheck:
