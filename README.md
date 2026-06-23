@@ -14,6 +14,10 @@ A backend Asset Management System built for the DarkAtlas ASM platform — track
    docker exec <container_name> python -m backend.scripts.seed_admin
    ```
    This can be run from the command line or via the **Exec** tab in Docker Desktop.
+   
+Admin Credentials are:
+- username: admin
+- password: changeme123
 
 ---
 
