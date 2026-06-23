@@ -179,6 +179,21 @@ async def bulk_lifecycle_update(session: AsyncSession = Depends(get_session)):
         "marked_archived": archive_result.rowcount,
     }
 
+@assetrouter.patch("/reactivate/{asset_id}")
+async def activate_asset(asset_id: UUID, current_user: User = Depends(get_current_user),  session: AsyncSession = Depends(get_session)):
+    asset = await session.get(Asset, asset_id)
+    if asset is None:
+        raise get_404_error("Asset")
+    touch_asset(asset, session)
+    if not current_user.is_elevated_user:
+        if asset.org_id != current_user.org_id:
+            raise cant_access_other_org_error
+    
+    asset.status = AssetStatus.active
+    session.add(asset)
+    await session.commit()
+    return asset
+
 @assetrouter.get("/{asset_id}/graph")
 async def get_asset_graph(asset_id: UUID, current_user: User = Depends(get_current_user),  session: AsyncSession = Depends(get_session)):
     asset = await session.get(Asset, asset_id)
