@@ -56,6 +56,49 @@ async def get_asset_summary(
         "by_status": by_status,
     }
 
+@assetrouter.post('/admin/lifecycle-reap', dependencies=[Depends(require_role(UserRole.admin))])
+async def bulk_lifecycle_update(session: AsyncSession = Depends(get_session)):
+    now = datetime.now(timezone.utc)
+    stale_cutoff = now - timedelta(days=7)
+    archive_cutoff = now - timedelta(days=30)
+
+    stale_result = await session.exec(
+        update(Asset)
+        .where(col(Asset.status) == AssetStatus.active)
+        .where(col(Asset.last_seen) < stale_cutoff)
+        .values(status=AssetStatus.stale)
+        )
+
+    archive_result = await session.exec(
+        update(Asset)
+        .where(col(Asset.status) == AssetStatus.stale)
+        .where(col(Asset.last_seen) < archive_cutoff)
+        .values(status=AssetStatus.archived)
+        )
+
+    await session.commit()
+
+    return {
+        "message": "Asset lifecycle sweeping complete.",
+        "marked_stale": stale_result.rowcount,
+        "marked_archived": archive_result.rowcount,
+    }
+
+@assetrouter.patch("/reactivate/{asset_id}")
+async def activate_asset(asset_id: UUID, current_user: User = Depends(get_current_user),  session: AsyncSession = Depends(get_session)):
+    asset = await session.get(Asset, asset_id)
+    if asset is None:
+        raise get_404_error("Asset")
+    touch_asset(asset, session)
+    if not current_user.is_elevated_user:
+        if asset.org_id != current_user.org_id:
+            raise cant_access_other_org_error
+    
+    asset.status = AssetStatus.active
+    session.add(asset)
+    await session.commit()
+    return asset
+
 @assetrouter.get("/{asset_id}")
 async def get_asset(asset_id: UUID, current_user: User = Depends(get_current_user), session: AsyncSession = Depends(get_session)):
     asset = await session.get(Asset, asset_id)
@@ -150,49 +193,6 @@ async def add_tags(asset_id: UUID, new_tags: list[str], session: AsyncSession = 
     if asset is None : raise get_404_error("Asset")
     touch_asset(asset, session)
     asset.tags += new_tags
-    session.add(asset)
-    await session.commit()
-    return asset
-
-@assetrouter.post('/admin/lifecycle-reap', dependencies=[Depends(require_role(UserRole.admin))])
-async def bulk_lifecycle_update(session: AsyncSession = Depends(get_session)):
-    now = datetime.now(timezone.utc)
-    stale_cutoff = now - timedelta(days=7)
-    archive_cutoff = now - timedelta(days=30)
-
-    stale_result = await session.exec(
-        update(Asset)
-        .where(col(Asset.status) == AssetStatus.active)
-        .where(col(Asset.last_seen) < stale_cutoff)
-        .values(status=AssetStatus.stale)
-        )
-
-    archive_result = await session.exec(
-        update(Asset)
-        .where(col(Asset.status) == AssetStatus.stale)
-        .where(col(Asset.last_seen) < archive_cutoff)
-        .values(status=AssetStatus.archived)
-        )
-
-    await session.commit()
-
-    return {
-        "message": "Asset lifecycle sweeping complete.",
-        "marked_stale": stale_result.rowcount,
-        "marked_archived": archive_result.rowcount,
-    }
-
-@assetrouter.patch("/reactivate/{asset_id}")
-async def activate_asset(asset_id: UUID, current_user: User = Depends(get_current_user),  session: AsyncSession = Depends(get_session)):
-    asset = await session.get(Asset, asset_id)
-    if asset is None:
-        raise get_404_error("Asset")
-    touch_asset(asset, session)
-    if not current_user.is_elevated_user:
-        if asset.org_id != current_user.org_id:
-            raise cant_access_other_org_error
-    
-    asset.status = AssetStatus.active
     session.add(asset)
     await session.commit()
     return asset
