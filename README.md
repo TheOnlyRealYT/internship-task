@@ -65,7 +65,7 @@ docker compose exec app pytest -v
 ## Relationship Graph Visualization (Bonus)
 
 A simple static visualization of the asset relationship graph is available at:
-http://localhost/graph-viewer
+http://localhost/graph
 
 Enter an asset's UUID and auth token to render
 that asset and its connected neighborhood, color-coded by asset type.
