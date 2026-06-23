@@ -5,8 +5,8 @@ from fastapi import FastAPI
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    async with engine.begin() as conn:
-        await conn.run_sync(SQLModel.metadata.create_all)
+    #async with engine.begin() as conn:
+    #    await conn.run_sync(SQLModel.metadata.create_all)
     
     yield
     
