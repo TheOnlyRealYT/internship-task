@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   app:
     build: .
@@ -19,7 +21,22 @@ services:
     env_file:
       - .env.db
     volumes:
-      - darkatlas_data:/var/lib/postgresql/data
+      - darkatlas_prod_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U darkatlas"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  test-db:
+    image: postgres:16
+    container_name: darkatlas-test-db
+    ports:
+      - "5433:5432"
+    env_file:
+      - .env.db
+    environment:
+      - POSTGRES_DB=darkatlas_test
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U darkatlas"]
       interval: 5s
@@ -27,4 +44,4 @@ services:
       retries: 5
 
 volumes:
-  darkatlas_data:
+  darkatlas_prod_data:

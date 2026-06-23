@@ -3,8 +3,10 @@ import pytest_asyncio
 from sqlmodel import SQLModel
 from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
+from os import getenv
 
-TEST_DATABASE_URL = "postgresql+asyncpg://darkatlas:1234darkatlas@localhost:5432/darkatlas-test-db"
+
+TEST_DATABASE_URL = getenv("TEST_DATABASE_URL", "")
 
 @pytest_asyncio.fixture
 async def session():
