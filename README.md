@@ -60,7 +60,7 @@ http://localhost/docs
 
 ## Running Tests
 
-docker compose exec app pytest -v
+docker exec darkatlas-app pytest -v
 
 ## Relationship Graph Visualization (Bonus)
 
