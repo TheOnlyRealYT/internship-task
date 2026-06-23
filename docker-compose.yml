@@ -6,7 +6,7 @@ services:
     ports:
       - "80:80"
     env_file:
-      - backend/.env
+      - .env
     depends_on:
       db:
         condition: service_healthy
