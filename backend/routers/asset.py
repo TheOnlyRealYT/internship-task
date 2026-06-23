@@ -71,6 +71,7 @@ async def get_assets(
     type: AssetType | None = Query(None),
     status_: AssetStatus | None = Query(AssetStatus.active),
     tag: str | None = Query(None),
+    value_contains: str | None = Query(None),
     sort_by: str = Query("last_seen"),
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
@@ -93,6 +94,8 @@ async def get_assets(
         statement = statement.where(Asset.status == status_)
     if tag:
         statement = statement.where(tag == any_(Asset.tags))
+    if value_contains:
+        statement = statement.where(col(Asset.value).ilike(f"%{value_contains}%"))
 
     sort_column = getattr(Asset, sort_by, None)
     if sort_column is None:
