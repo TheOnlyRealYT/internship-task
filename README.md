@@ -52,6 +52,23 @@ Accessing an asset also **reactivates** it (the same mechanism used for re-sight
 - Re-sighting an asset during a bulk ingest
 - A conflict during asset creation (i.e. the asset already exists)
 
+## API Documentation
+
+Once running, interactive API docs (Swagger UI) are available at:
+http://localhost/docs
+
+## Running Tests
+
+docker compose exec app pytest -v
+
+## Relationship Graph Visualization (Bonus)
+
+A simple static visualization of the asset relationship graph is available at:
+http://localhost/graph-viewer
+
+Enter an asset's UUID (and a bearer token if the endpoint requires auth) to render
+that asset and its connected neighborhood, color-coded by asset type.
+
 ---
 
 ## Design Choices

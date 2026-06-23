@@ -218,7 +218,7 @@ async def get_asset_graph(asset_id: UUID, current_user: User = Depends(get_curre
     statement = select(AssetRelationship).where(
         or_(
             AssetRelationship.from_asset_id == asset_id,
-            AssetRelationship.to_asset_id == asset_id,
+            AssetRelationship.to_asset_id == asset_id
         )
     )
     result = await session.exec(statement)
@@ -235,8 +235,8 @@ async def get_asset_graph(asset_id: UUID, current_user: User = Depends(get_curre
         related_statement = select(Asset).where(col(Asset.id).in_(related_ids))
         related_result = await session.exec(related_statement)
         related_assets = related_result.all()
-    for asset in related_assets:
-        touch_asset(asset, session)
+    for asset_ in related_assets:
+        touch_asset(asset_, session)
 
     await session.commit()
     return {

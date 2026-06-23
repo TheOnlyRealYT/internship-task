@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>DarkAtlas — Asset Relationship Graph</title>
+  <script src="https://unpkg.com/vis-network@9.1.9/standalone/umd/vis-network.min.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #0d1117;
+      color: #e6edf3;
+    }
+    header {
+      padding: 16px 24px;
+      border-bottom: 1px solid #21262d;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    h1 {
+      font-size: 16px;
+      font-weight: 600;
+      margin: 0;
+      white-space: nowrap;
+    }
+    input, button {
+      font-family: inherit;
+      font-size: 13px;
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: 1px solid #30363d;
+      background: #161b22;
+      color: #e6edf3;
+    }
+    input { width: 320px; }
+    input::placeholder { color: #6e7681; }
+    button {
+      background: #238636;
+      border-color: #2ea043;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    button:hover { background: #2ea043; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    #status {
+      font-size: 12px;
+      color: #8b949e;
+      margin-left: auto;
+    }
+    #status.error { color: #f85149; }
+    #network {
+      width: 100%;
+      height: calc(100vh - 60px);
+    }
+    .legend {
+      position: absolute;
+      bottom: 16px;
+      left: 16px;
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 12px;
+      line-height: 1.6;
+      pointer-events: none;
+    }
+    .legend-item { display: flex; align-items: center; gap: 6px; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🛰 DarkAtlas — Relationship Graph</h1>
+    <input id="assetId" type="text" placeholder="Asset UUID (e.g. a1b2c3d4-...)" />
+    <input id="token" type="text" placeholder="Bearer token" />
+    <button id="loadBtn">Load Graph</button>
+    <span id="status">Enter an asset ID to begin.</span>
+  </header>
+
+  <div style="position: relative;">
+    <div id="network"></div>
+    <div class="legend" id="legend"></div>
+  </div>
+
+  <script>
+    const API_BASE = "/api/v1";
+
+    const TYPE_COLORS = {
+      domain: "#58a6ff",
+      subdomain: "#79c0ff",
+      ip_address: "#d2a8ff",
+      service: "#f78166",
+      certificate: "#3fb950",
+      technology: "#e3b341",
+    };
+
+    const FALLBACK_COLOR = "#8b949e";
+
+    let activeNetwork = null;
+
+    function colorFor(type) {
+      return TYPE_COLORS[type] || FALLBACK_COLOR;
+    }
+
+    function renderLegend() {
+      const legend = document.getElementById("legend");
+      legend.innerHTML = Object.entries(TYPE_COLORS)
+        .map(([type, color]) =>
+          `<div class="legend-item"><span class="dot" style="background:${color}"></span>${type}</div>`
+        )
+        .join("");
+    }
+
+    function setStatus(text, isError = false) {
+      const el = document.getElementById("status");
+      el.textContent = text;
+      el.classList.toggle("error", isError);
+    }
+
+    function isValidUuid(value) {
+      // insure data sent is at least formated correctly
+      return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
+    }
+
+    async function loadGraph() {
+      const assetId = document.getElementById("assetId").value.trim();
+      const token = document.getElementById("token").value.trim();
+      const btn = document.getElementById("loadBtn");
+
+      if (!assetId) {
+        setStatus("Enter an asset ID first.", true);
+        return;
+      }
+      if (!isValidUuid(assetId)) {
+        setStatus("That doesn't look like a valid UUID.", true);
+        return;
+      }
+
+      btn.disabled = true;
+      setStatus("Loading...");
+
+      try {
+        const headers = {};
+        if (token) headers["Authorization"] = `Bearer ${token}`;
+
+        const res = await fetch(`${API_BASE}/assets/${encodeURIComponent(assetId)}/graph`, { headers });
+
+        if (!res.ok) {
+          let detail = `Request failed (${res.status})`;
+          try {
+            const body = await res.json();
+            if (body && body.detail) detail = body.detail;
+          } catch {
+            // response wasn't JSON keep the generic status-based message
+          }
+          throw new Error(detail);
+        }
+
+        const data = await res.json();
+
+        if (!data || !data.asset || !data.asset.id) {
+          throw new Error("Response was missing the root asset — nothing to draw.");
+        }
+
+        const { nodeCount, edgeCount } = drawGraph(data);
+        setStatus(`Loaded ${nodeCount} node(s), ${edgeCount} relationship(s).`);
+      } catch (err) {
+        setStatus(err.message || "Something went wrong.", true);
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    function buildGraphData(data) {
+      const nodeMap = new Map(); // assetId -> node definition
+
+      function addNode(asset) {
+        if (!asset || !asset.id) return; // skip malformed entries defensively
+        if (nodeMap.has(asset.id)) return; // already added, first write wins
+        nodeMap.set(asset.id, {
+          id: asset.id,
+          label: `${asset.value ?? "(unknown)"}\n(${asset.asset_type ?? "unknown"})`,
+          color: colorFor(asset.asset_type),
+          font: { color: "#0d1117", face: "monospace" },
+          shape: "ellipse",
+        });
+      }
+
+      addNode(data.asset);
+      const rootNode = nodeMap.get(data.asset.id);
+      if (rootNode) rootNode.borderWidth = 3;
+
+      for (const related of data.related_assets || []) {
+        addNode(related);
+      }
+
+      const edgeMap = new Map();
+      for (const rel of data.relationships || []) {
+        if (!rel || !rel.from_asset_id || !rel.to_asset_id || !rel.relationship_type) {
+          console.warn("Skipping malformed relationship entry:", rel);
+          continue;
+        }
+
+        if (!nodeMap.has(rel.from_asset_id) || !nodeMap.has(rel.to_asset_id)) {
+          console.warn(
+            "Skipping relationship — endpoint not found among nodes:",
+            rel,
+            "known node ids:", Array.from(nodeMap.keys())
+          );
+          continue;
+        }
+
+        const key = `${rel.from_asset_id}|${rel.to_asset_id}|${rel.relationship_type}`;
+        if (edgeMap.has(key)) continue;
+
+        edgeMap.set(key, {
+          id: key,
+          from: rel.from_asset_id,
+          to: rel.to_asset_id,
+          label: rel.relationship_type,
+          arrows: "to",
+          font: { color: "#8b949e", size: 11, strokeWidth: 0 },
+          color: { color: "#30363d", highlight: "#58a6ff" },
+        });
+      }
+
+      return {
+        nodes: Array.from(nodeMap.values()),
+        edges: Array.from(edgeMap.values()),
+      };
+    }
+
+    function drawGraph(data) {
+      const { nodes, edges } = buildGraphData(data);
+
+      if (activeNetwork) {
+        activeNetwork.destroy();
+        activeNetwork = null;
+      }
+
+      const container = document.getElementById("network");
+      activeNetwork = new vis.Network(
+        container,
+        { nodes: new vis.DataSet(nodes), edges: new vis.DataSet(edges) },
+        {
+          nodes: {
+            shape: "ellipse",
+            margin: 10,
+            widthConstraint: { minimum: 80, maximum: 180 },
+          },
+          edges: {
+            smooth: { 
+              type: "continuous",
+              roundness: 0.5 
+            } ,
+            font: {
+              size: 20,
+              align: "horizontal",
+            }
+          },
+          physics: {
+            solver: "barnesHut",
+            barnesHut: {
+              gravitationalConstant: -5000,
+              centralGravity: 0.3,
+              springLength: 250,
+              springConstant: 0.04,
+              damping: 0.09,
+              avoidOverlap: 1
+            },
+            stabilization: {
+              enabled: true,
+              iterations: 1000,
+              updateInterval: 25
+            }
+          },
+          interaction: { 
+            hover: true,
+            hideEdgesOnDrag: false,
+            hideEdgesOnZoom: false,
+            hideNodesOnDrag: false
+          }
+        }
+      );
+
+      return { nodeCount: nodes.length, edgeCount: edges.length };
+    }
+
+    document.getElementById("loadBtn").addEventListener("click", loadGraph);
+    document.getElementById("assetId").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") loadGraph();
+    });
+
+    renderLegend();
+  </script>
+</body>
+</html>
